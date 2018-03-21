@@ -1,0 +1,74 @@
+function MyErrFilter() {
+	var t = {
+		lastReg: /^$/,
+		timeStamp: 0
+	};
+
+	/**
+	 * 记录本次正在使用的条件正则
+	**/
+	function recordCase(reg) {
+		t.lastReg = reg;
+	}
+	
+	/**
+	 * 检测不是上次的条件正则时返回 true
+	 * true 表示通过过滤
+	 * false 表示被拦截
+	**/	 
+	function check(num) {
+		return !t.lastReg.test(num);
+	}
+	
+	/**
+	 * 调试用的函数，可以删掉
+	**/
+	function print() {
+		return t;
+	}
+	
+	this.recordCase = recordCase;
+	this.check = check;
+	this.print = print;
+}
+
+/******************************************/
+// 使用案例
+
+var filter = new MyErrFilter();
+var num = '';
+
+// 为了方便描述，我先定个输出函数
+function printErr(num) {
+	console.log('刚刚发生了错误：' + num);
+}
+
+function myLogic(regCase, num) {
+	if (filter.check(num)) {
+		//如果符合条件，就处理并记录
+		if (regCase.test(num)) {			
+			printErr(num); // 输出 【刚刚发生错误: 012】
+			
+			//处理完马上做个记录
+			filter.recordCase(regCase);
+		}
+	}
+}
+
+
+// 即将...开始...接收数据
+
+//第一个错误类型模拟
+myLogic(/^0\d+$/i, '012'); //第一次接收 012，提示错误
+myLogic(/^0\d+$/i, '012'); //第二次还是接收 012，不提示错误
+myLogic(/^0\d+$/i, '055'); //第三次接收 055，也不提示错误，因为是同一匹配类型
+
+//切换另一个错误类型模拟
+myLogic(/^20$/i, '20'); //第一次接收 20，和上次类型不一致，那么提醒错误并记录当前类型
+myLogic(/^20$/i, '20'); //再次接收到 20，和上次同类型，因而不提示
+
+myLogic(/^21$/i, '21'); //接收 21 和上次类型不一致，提示
+myLogic(/^21$/i, '21'); //和上次同类型，不提示
+myLogic(/^21$/i, '21'); //和上次同类型，不提示
+myLogic(/^21$/i, '21'); //和上次同类型，不提示
+
